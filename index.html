@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VTT to Text Converter</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Apply Inter font globally */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        /* Style for text areas */
+        textarea {
+            border-radius: 0.375rem; /* rounded-md */
+            border: 1px solid #d1d5db; /* border-gray-300 */
+            padding: 0.75rem; /* p-3 */
+            font-family: monospace; /* Use monospace font for code-like text */
+            min-height: 250px; /* Ensure text areas have a decent height */
+            resize: vertical; /* Allow vertical resizing */
+        }
+        /* Custom button styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem; /* py-2 px-4 */
+            border-radius: 0.375rem; /* rounded-md */
+            font-weight: 500; /* font-medium */
+            transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+            cursor: pointer; /* Ensure cursor indicates clickable */
+        }
+        .btn-primary {
+            background-color: #4f46e5; /* bg-indigo-600 */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca; /* hover:bg-indigo-700 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+        }
+        .btn-secondary {
+            background-color: white;
+            color: #374151; /* text-gray-700 */
+            border: 1px solid #d1d5db; /* border-gray-300 */
+        }
+        .btn-secondary:hover {
+            background-color: #f9fafb; /* hover:bg-gray-50 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+        }
+        .icon {
+            width: 1rem; /* w-4 */
+            height: 1rem; /* h-4 */
+            margin-right: 0.5rem; /* mr-2 */
+            pointer-events: none; /* Prevent icon from interfering with button click */
+        }
+        /* Style for the conversion arrow */
+        .conversion-arrow {
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             padding: 1rem; /* p-4 */
+        }
+        .conversion-arrow-icon {
+             width: 2.5rem; /* w-10 */
+             height: 2.5rem; /* h-10 */
+             color: #4f46e5; /* text-indigo-600 */
+             background-color: #e0e7ff; /* bg-indigo-100 */
+             border-radius: 9999px; /* rounded-full */
+             padding: 0.5rem; /* p-2 */
+        }
+        /* Style for feature cards */
+        .feature-card {
+            background-color: white;
+            padding: 1.5rem; /* p-6 */
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* shadow */
+            text-align: center;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+        }
+        .feature-icon {
+            width: 2.5rem; /* w-10 */
+            height: 2.5rem; /* h-10 */
+            margin: 0 auto 1rem; /* mx-auto mb-4 */
+            color: #4f46e5; /* text-indigo-600 */
+        }
+        /* Message box styling */
+        #messageBox {
+            position: fixed;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #1f2937; /* bg-gray-800 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem; /* rounded-md */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            z-index: 50;
+            pointer-events: none; /* Allow clicks through when hidden */
+        }
+        #messageBox.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container mx-auto px-4 py-8 max-w-6xl" role="main">
+
+        <header class="mb-8 flex items-center justify-between bg-white p-4 rounded-lg shadow">
+             <div class="flex items-center">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left-right mr-2 text-indigo-600"><path d="m17 18 5-5-5-5"/><path d="m7 6-5 5 5 5"/><path d="M22 13H2"/><path d="M2 11h20"/></svg>
+                <h1 class="text-xl font-semibold text-gray-800">VTT to Text Converter Tool</h1>
+             </div>
+        </header>
+
+        <section class="bg-white p-6 rounded-lg shadow mb-10">
+            <h2 class="text-lg font-medium text-gray-700 mb-2">Convert your VTT to Text Format</h2>
+            <p class="text-sm text-gray-500 mb-6">Simply paste your VTT data, and we will automatically convert it to the desired text format.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-start">
+                <div class="flex flex-col space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label for="vttInput" class="block text-sm font-medium text-gray-700">Input VTT</label>
+                        <div>
+                            <button id="clearButton" class="btn btn-secondary text-xs px-3 py-1">
+                                <i data-lucide="trash-2" class="icon w-3 h-3 mr-1"></i>Clear
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="vttInput" rows="10" class="w-full" placeholder="WEBVTT&#10;&#10;00:00:00.000 --> 00:00:05.000&#10;Subtitle line 1.&#10;&#10;00:00:05.000 --> 00:00:10.000&#10;Subtitle line 2." aria-label="VTT Input" aria-describedby="inputStatus"></textarea>
+                    <div id="inputStatus" class="text-xs text-green-600 h-4"></div> </div>
+
+                <div class="conversion-arrow hidden md:flex">
+                    <i data-lucide="arrow-right" class="conversion-arrow-icon"></i>
+                </div>
+
+                 <div class="conversion-arrow flex md:hidden justify-center">
+                    <i data-lucide="arrow-down" class="conversion-arrow-icon"></i>
+                </div>
+
+                <div class="flex flex-col space-y-3">
+                     <div class="flex justify-between items-center">
+                        <label for="textOutput" class="block text-sm font-medium text-gray-700">Generated Text</label>
+                        <div>
+                            <button id="copyButton" class="btn btn-secondary text-xs px-3 py-1">
+                                <i data-lucide="copy" class="icon w-3 h-3 mr-1"></i>Copy
+                            </button>
+                            <button id="downloadButton" class="btn btn-secondary text-xs px-3 py-1 ml-2">
+                                <i data-lucide="download" class="icon w-3 h-3 mr-1"></i>Download
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="textOutput" rows="10" class="w-full bg-gray-50" readonly aria-label="Converted Text Output" aria-live="polite" placeholder="[00:00:00.000 --> 00:00:05.000] Subtitle line 1.&#10;[00:00:05.000 --> 00:00:10.000] Subtitle line 2."></textarea>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-xl font-semibold text-gray-800 mb-6 text-center">Features</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="feature-card">
+                    <i data-lucide="zap" class="feature-icon"></i>
+                    <h3 class="font-medium text-gray-700 mb-2">Live Conversion</h3>
+                    <p class="text-sm text-gray-500">The text format updates automatically as you type or paste VTT content.</p>
+                </div>
+                <div class="feature-card">
+                    <i data-lucide="code-xml" class="feature-icon"></i>
+                    <h3 class="font-medium text-gray-700 mb-2">Accurate Parsing</h3>
+                    <p class="text-sm text-gray-500">Correctly parses VTT timestamps and associated text lines.</p>
+                </div>
+                <div class="feature-card">
+                    <i data-lucide="download-cloud" class="feature-icon"></i>
+                    <h3 class="font-medium text-gray-700 mb-2">Quick Export</h3>
+                    <p class="text-sm text-gray-500">One-click copy or download of the generated text format.</p>
+                </div>
+                 <div class="feature-card">
+                     <i data-lucide="layout-panel-left" class="feature-icon"></i>
+                    <h3 class="font-medium text-gray-700 mb-2">Simple Interface</h3>
+                    <p class="text-sm text-gray-500">Easy-to-use interface inspired by modern developer tools.</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <div id="messageBox">Copied to clipboard!</div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        // Add fallback SVG icons in case Lucide fails to load
+        const fallbackIcons = {
+            'trash-2': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>',
+            'copy': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="13" height="13" x="9" y="9"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+            'download': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>'
+        };
+
+        function loadFallbackIcons() {
+            Object.keys(fallbackIcons).forEach(iconName => {
+                const icons = document.querySelectorAll(`[data-lucide="${iconName}"]`);
+                icons.forEach(icon => {
+                    icon.innerHTML = fallbackIcons[iconName];
+                });
+            });
+        }
+
+        // Handle Lucide script load error
+        const lucideScript = document.querySelector('script[src*="lucide"]');
+        lucideScript.onerror = () => {
+            console.warn('Lucide script failed to load, using fallback icons');
+            loadFallbackIcons();
+        };
+
+        // Wait for the DOM to be fully loaded before running the script
+        document.addEventListener('DOMContentLoaded', (event) => {
+
+            // --- DOM Elements ---
+            const vttInput = document.getElementById('vttInput');
+            const textOutput = document.getElementById('textOutput');
+            const clearButton = document.getElementById('clearButton');
+            const copyButton = document.getElementById('copyButton');
+            const downloadButton = document.getElementById('downloadButton');
+            const messageBox = document.getElementById('messageBox');
+            const inputStatus = document.getElementById('inputStatus'); // Status message area
+
+            // --- Constants ---
+            const TIMESTAMP_REGEX = /^\d{2}:\d{2}:\d{2}\.\d{3}\s+-->\s+\d{2}:\d{2}:\d{2}\.\d{3}/;
+
+            // --- Functions ---
+
+            /**
+             * Displays a temporary message in the message box.
+             * @param {string} message - The message to display.
+             */
+            function showMessage(message) {
+                messageBox.textContent = message;
+                messageBox.classList.add('show');
+                setTimeout(() => {
+                    messageBox.classList.remove('show');
+                }, 2000); // Hide after 2 seconds
+            }
+
+            /**
+             * Converts VTT content to the target text format.
+             * Handles potential multi-line subtitles correctly.
+             * @param {string} vttString - The input VTT content.
+             * @returns {string} The converted text content.
+             */
+            function convertVttToText(vttString) {
+                // Return empty string if input is invalid or null
+                if (!vttString || typeof vttString !== 'string') {
+                    return '';
+                }
+
+                const lines = vttString.trim().split('\n');
+                const outputLines = [];
+                let currentTimestamp = null;
+                let currentTextLines = [];
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+
+                    // Check if the line is a timestamp
+                    if (TIMESTAMP_REGEX.test(trimmedLine)) {
+                        // If we have a pending cue (timestamp and text), process it before starting the new one
+                        if (currentTimestamp && currentTextLines.length > 0) {
+                             outputLines.push(`[${currentTimestamp}] ${currentTextLines.join(' ')}`);
+                        }
+                        // Start the new cue
+                        currentTimestamp = trimmedLine;
+                        currentTextLines = []; // Reset text for the new timestamp
+                    } else if (trimmedLine === '' || trimmedLine.toUpperCase() === 'WEBVTT') {
+                        // If we encounter a blank line or WEBVTT header:
+                        // Process the pending cue if it exists
+                        if (currentTimestamp && currentTextLines.length > 0) {
+                             outputLines.push(`[${currentTimestamp}] ${currentTextLines.join(' ')}`);
+                        }
+                        // Reset for the next potential cue (handles blank lines between cues)
+                        currentTimestamp = null;
+                        currentTextLines = [];
+                        // Skip further processing for this line (WEBVTT or blank)
+                        continue;
+                    } else if (currentTimestamp) {
+                        // If it's not a timestamp, not blank, and we have an active timestamp,
+                        // it must be a subtitle text line. Append it.
+                        currentTextLines.push(trimmedLine);
+                    }
+                    // Ignore lines that appear before the first timestamp (e.g., notes, style blocks if any)
+                }
+
+                // Process the very last cue after the loop finishes
+                if (currentTimestamp && currentTextLines.length > 0) {
+                     outputLines.push(`[${currentTimestamp}] ${currentTextLines.join(' ')}`);
+                }
+
+                return outputLines.join('\n'); // Join all processed lines
+            }
+
+            /**
+             * Handles the input event on the VTT textarea.
+             */
+            function handleInputChange() {
+                const vttContent = vttInput.value;
+                const convertedText = convertVttToText(vttContent);
+                textOutput.value = convertedText;
+
+                // Provide simple feedback in the status area
+                if (vttContent.trim() === '') {
+                    inputStatus.textContent = ''; // Clear status if input is empty
+                } else {
+                     inputStatus.textContent = 'Converted!';
+                     // Optional: clear status after a delay
+                     setTimeout(() => { inputStatus.textContent = ''; }, 3000);
+                }
+            }
+
+            /**
+             * Handles the click event for the Clear button.
+             */
+            function handleClear() {
+                vttInput.value = '';
+                textOutput.value = '';
+                inputStatus.textContent = ''; // Clear status
+                vttInput.focus(); // Set focus back to input for convenience
+            }
+
+            /**
+             * Handles the click event for the Copy button.
+             */
+            function handleCopy() {
+                const textToCopy = textOutput.value;
+                if (!textToCopy) {
+                    showMessage('Nothing to copy!');
+                    return;
+                }
+                navigator.clipboard.writeText(textToCopy)
+                    .then(() => {
+                        showMessage('Copied to clipboard!');
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy text: ', err);
+                        showMessage('Failed to copy! Check console.'); // Inform user about potential console error
+                    });
+            }
+
+            /**
+             * Handles the click event for the Download button.
+             * Creates a text file and initiates download using the standard method.
+             */
+            function handleDownload() {
+                 const textToDownload = textOutput.value;
+                 console.log('Download button clicked.'); // Log start
+
+                 if (!textToDownload) {
+                    console.log('Download aborted: Output is empty.'); // Log empty check
+                    showMessage('Nothing to download!');
+                    return;
+                }
+
+                try {
+                    console.log('Creating Blob...'); // Log blob creation
+                    // Create a Blob with the text content and specify UTF-8 encoding
+                    const blob = new Blob([textToDownload], { type: 'text/plain;charset=utf-8' });
+                    console.log('Blob created:', blob);
+
+                    console.log('Creating Object URL...'); // Log URL creation
+                    // Create an object URL for the Blob
+                    const url = URL.createObjectURL(blob);
+                    console.log('Object URL created:', url);
+
+                    // Create a temporary anchor element
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'converted_subtitles.txt'; // Filename for download
+                    // a.style.display = 'none'; // Optionally hide the link
+                    console.log('Anchor element created:', a);
+
+                    // Append the anchor to the body temporarily
+                    document.body.appendChild(a);
+                    console.log('Anchor appended to body.');
+
+                    // Programmatically click the anchor to trigger the download
+                    a.click();
+                    console.log('Anchor clicked programmatically.');
+
+                    // Clean up: Remove the anchor and revoke the object URL
+                    // Use setTimeout to ensure cleanup happens after the browser might need the elements
+                    setTimeout(() => {
+                        console.log('Cleaning up download artifacts...');
+                        try {
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            console.log('Cleanup complete.');
+                        } catch (cleanupError) {
+                            console.error('Error during cleanup:', cleanupError);
+                        }
+                    }, 100); // Delay cleanup slightly (100ms)
+
+                    showMessage('Download started!');
+
+                } catch (error) {
+                    // Catch any unexpected errors during the process
+                    console.error('Error during download process:', error);
+                    showMessage('Download failed. See console for details.');
+                }
+            }
+
+            // Add debouncing for better performance with large files
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            // Modify the input event listener to use debouncing
+            const debouncedHandleInputChange = debounce(handleInputChange, 300);
+            vttInput.addEventListener('input', () => {
+                inputStatus.textContent = 'Converting...'; // Immediate feedback
+                debouncedHandleInputChange();
+            });
+
+            // --- Event Listeners ---
+            clearButton.addEventListener('click', handleClear);
+            copyButton.addEventListener('click', handleCopy);
+            downloadButton.addEventListener('click', handleDownload);
+
+            // --- Initialize Lucide Icons ---
+            // Now this runs after the DOM is ready and the lucide script is loaded
+            try {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                } else {
+                    throw new Error('Lucide not loaded');
+                }
+            } catch (error) {
+                console.warn('Using fallback icons:', error);
+                loadFallbackIcons();
+            }
+
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Ctrl/Cmd + Shift + V to paste
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'V') {
+                    e.preventDefault();
+                    navigator.clipboard.readText().then(text => {
+                        vttInput.value = text;
+                        handleInputChange();
+                    });
+                }
+                // Ctrl/Cmd + Shift + C to copy
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
+                    e.preventDefault();
+                    handleCopy();
+                }
+                // Ctrl/Cmd + Shift + D to download
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'D') {
+                    e.preventDefault();
+                    handleDownload();
+                }
+            });
+
+            // Improve button accessibility
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(button => {
+                button.setAttribute('role', 'button');
+                button.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        button.click();
+                    }
+                });
+            });
+
+        }); // End of DOMContentLoaded listener
+    </script>
+
+</body>
+</html>
