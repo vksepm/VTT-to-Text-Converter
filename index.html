@@ -22,8 +22,15 @@
             min-height: 250px; /* Ensure text areas have a decent height */
             resize: vertical; /* Allow vertical resizing */
             white-space: pre; /* Preserve whitespace and line breaks */
-            tab-size: 4; /* Set consistent tab size */
-            font-weight: 400; /* Regular weight for better readability */
+            tab-size: 4; /* Set consistent tab size */            font-weight: 400; /* Regular weight for better readability */
+        }
+        
+        /* Drag and drop styling */
+        .drag-over {
+            border-color: #4f46e5 !important; /* indigo-600 */
+            background-color: #eef2ff !important; /* indigo-50 */
+            outline: 2px dashed #4f46e5 !important;
+            outline-offset: -2px;
         }
         /* Custom button styles */
         .btn {
@@ -341,6 +348,24 @@
                      // Optional: clear status after a delay
                      setTimeout(() => { inputStatus.textContent = ''; }, 3000);
                 }
+            }            /**
+             * Handles file reading and processing
+             * @param {File} file - The VTT file to process
+             */
+            async function handleFile(file) {
+                if (!file.name.toLowerCase().endsWith('.vtt')) {
+                    showMessage('Please drop a .vtt file');
+                    return;
+                }
+
+                try {
+                    const text = await file.text();
+                    vttInput.value = text;
+                    handleInputChange();
+                } catch (error) {
+                    console.error('Error reading file:', error);
+                    showMessage('Error reading file');
+                }
             }
 
             /**
@@ -469,7 +494,29 @@
             } catch (error) {
                 console.warn('Using fallback icons:', error);
                 loadFallbackIcons();
-            }
+            }            // Add drag and drop handlers
+            vttInput.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                vttInput.classList.add('drag-over');
+            });
+
+            vttInput.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                vttInput.classList.remove('drag-over');
+            });
+
+            vttInput.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                vttInput.classList.remove('drag-over');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            });
 
             // Add keyboard shortcuts
             document.addEventListener('keydown', (e) => {
