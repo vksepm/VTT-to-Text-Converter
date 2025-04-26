@@ -119,11 +119,9 @@
                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left-right mr-2 text-indigo-600"><path d="m17 18 5-5-5-5"/><path d="m7 6-5 5 5 5"/><path d="M22 13H2"/><path d="M2 11h20"/></svg>
                 <h1 class="text-lg font-semibold text-gray-800">VTT to Text Converter</h1>
              </div>
-        </header>
-
-        <section class="bg-white p-3 rounded-lg shadow mb-4">
+        </header>        <section class="bg-white p-3 rounded-lg shadow mb-4">
             <h2 class="text-sm font-medium text-gray-700 mb-1">Convert VTT to Text</h2>
-            <p class="text-xs text-gray-500 mb-2">Paste VTT data for automatic conversion.</p>            <div class="flex flex-col gap-1">
+            <p class="text-xs text-gray-500 mb-2">Paste VTT data for automatic conversion. Transcripts are consolidated into ~20 second segments.</p><div class="flex flex-col gap-1">
                 <!-- VTT Input Section -->
                 <div class="flex flex-col space-y-2">
                     <div class="flex justify-between items-center">
@@ -156,7 +154,7 @@
                             </button>
                         </div>
                     </div>
-                    <textarea id="textOutput" rows="8" class="w-full bg-gray-50 text-sm" readonly aria-label="Converted Text Output" aria-live="polite" placeholder="[00:00:00.000 --> 00:00:05.000] Subtitle line 1.&#10;[00:00:05.000 --> 00:00:10.000] Subtitle line 2."></textarea>
+                    <textarea id="textOutput" rows="8" class="w-full bg-gray-50 text-sm" readonly aria-label="Converted Text Output" aria-live="polite" placeholder="[00:00:00.000 --> 00:00:10.000] Subtitle line 1. Subtitle line 2."></textarea>
                 </div>
             </div>
         </section>
@@ -168,11 +166,10 @@
                     <i data-lucide="zap" class="w-5 h-5 mx-auto mb-1 text-indigo-600"></i>
                     <h3 class="text-xs font-medium text-gray-700 mb-1">Live Conversion</h3>
                     <p class="text-xs text-gray-500">Updates as you type</p>
-                </div>
-                <div class="feature-card p-2">
+                </div>                <div class="feature-card p-2">
                     <i data-lucide="code-xml" class="w-5 h-5 mx-auto mb-1 text-indigo-600"></i>
-                    <h3 class="text-xs font-medium text-gray-700 mb-1">Accurate Parsing</h3>
-                    <p class="text-xs text-gray-500">Precise VTT handling</p>
+                    <h3 class="text-xs font-medium text-gray-700 mb-1">Smart Consolidation</h3>
+                    <p class="text-xs text-gray-500">Groups ~20s segments</p>
                 </div>
                 <div class="feature-card p-2">
                     <i data-lucide="download-cloud" class="w-5 h-5 mx-auto mb-1 text-indigo-600"></i>
@@ -244,92 +241,137 @@
                 }, 2000); // Hide after 2 seconds
             }
 
-            /**
-             * Converts VTT content to the target text format.
-             * Handles potential multi-line subtitles correctly.
-             * @param {string} vttString - The input VTT content.
-             * @returns {string} The converted text content.
-             */            function stripXMLTags(text) {
+            function stripXMLTags(text) {
                 // Remove XML/HTML tags and their contents
                 return text.replace(/<[^>]+>/g, '');
-            }            function convertVttToText(vttString) {
+            }
+
+            /**
+             * Converts VTT content to the target text format.
+             * Consolidates subtitles into approximately 20-second segments.
+             * @param {string} vttString - The input VTT content.
+             * @returns {string} The converted text content.
+             */
+            function convertVttToText(vttString) {
                 // Return empty string if input is invalid or null
                 if (!vttString || typeof vttString !== 'string') {
                     return '';
                 }
 
                 const lines = vttString.trim().split('\n');
-                const outputLines = [];
+                const subtitles = [];
+                const segments = [];
+                let currentText = [];
                 let currentTimestamp = null;
-                let currentTextLines = [];
-                let previousText = '';
 
-                for (const line of lines) {
-                    const trimmedLine = line.trim();
-
-                    // Skip metadata lines that start with "Kind:" or "Language:"
-                    if (trimmedLine.startsWith('Kind:') || trimmedLine.startsWith('Language:')) {
+                // Parse all timestamps and text into subtitle objects
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    
+                    // Skip metadata lines and WEBVTT header
+                    if (line === '' || line.toUpperCase() === 'WEBVTT' || 
+                        line.startsWith('NOTE') || line.startsWith('Kind:') || 
+                        line.startsWith('Language:')) {
                         continue;
                     }
-
-                    // Check if the line is a timestamp
-                    if (TIMESTAMP_REGEX.test(trimmedLine)) {
-                        // Extract just the timestamp part without alignment info
-                        const timestampMatch = trimmedLine.match(/(\d{2}:\d{2}:\d{2}\.\d{3}\s+-->\s+\d{2}:\d{2}:\d{2}\.\d{3})/);
-                        if (timestampMatch) {
-                            // Process the previous cue if it exists and has new content
-                            if (currentTimestamp && currentTextLines.length > 0) {
-                                const cleanText = currentTextLines
-                                    .filter(text => text !== previousText) // Remove lines that match the previous text
-                                    .join(' ');
-                                if (cleanText) {
-                                    outputLines.push(`[${currentTimestamp}] ${cleanText}`);
-                                    previousText = cleanText;
-                                }
-                            }
-                            // Start the new cue with just the timestamp part
-                            currentTimestamp = timestampMatch[1];
-                            currentTextLines = []; // Reset text for the new timestamp
+                    
+                    // Parse timestamp lines
+                    if (TIMESTAMP_REGEX.test(line)) {
+                        // Process previous subtitle if exists
+                        if (currentTimestamp && currentText.length > 0) {
+                            subtitles.push({
+                                timestamp: currentTimestamp,
+                                text: currentText.join(' ').trim()
+                            });
+                            currentText = [];
                         }
-                    } else if (trimmedLine === '' || trimmedLine.toUpperCase() === 'WEBVTT') {
-                        // If we encounter a blank line or WEBVTT header:
-                        // Process the pending cue if it exists and has new content
-                        if (currentTimestamp && currentTextLines.length > 0) {
-                            const cleanText = currentTextLines
-                                .filter(text => text !== previousText)
-                                .join(' ');
-                            if (cleanText) {
-                                outputLines.push(`[${currentTimestamp}] ${cleanText}`);
-                                previousText = cleanText;
-                            }
-                        }
-                        // Reset for the next potential cue
-                        currentTimestamp = null;
-                        currentTextLines = [];
-                        // Skip further processing for this line
-                        continue;                    } else if (currentTimestamp) {
-                        // Skip lines that contain XML tags as they are duplicates
-                        if (!trimmedLine.includes('<')) {
-                            const cleanText = stripXMLTags(trimmedLine).trim();
-                            if (cleanText && cleanText !== previousText) {  // Only add non-empty and non-duplicate lines
-                                currentTextLines.push(cleanText);
-                            }
+                        
+                        // Extract timestamp
+                        currentTimestamp = line;
+                        continue;
+                    }
+                    
+                    // Collect text lines for current timestamp
+                    if (currentTimestamp && line !== '') {
+                        const cleanText = stripXMLTags(line).trim();
+                        if (cleanText) {
+                            currentText.push(cleanText);
                         }
                     }
-                    // Ignore lines that appear before the first timestamp
                 }
-
-                // Process the very last cue after the loop finishes
-                if (currentTimestamp && currentTextLines.length > 0) {
-                    const cleanText = currentTextLines
-                        .filter(text => text !== previousText)
-                        .join(' ');
-                    if (cleanText) {
-                        outputLines.push(`[${currentTimestamp}] ${cleanText}`);
-                    }
+                
+                // Add the last subtitle if exists
+                if (currentTimestamp && currentText.length > 0) {
+                    subtitles.push({
+                        timestamp: currentTimestamp,
+                        text: currentText.join(' ').trim()
+                    });
                 }
-
-                return outputLines.join('\n'); // Join all processed lines
+                
+                // Helper function to parse timestamp into seconds
+                function parseTimestamp(timestamp) {
+                    const timeStr = timestamp.split('-->')[0].trim();
+                    const [hours, minutes, rest] = timeStr.split(':');
+                    const seconds = parseFloat(rest);
+                    return parseFloat(hours) * 3600 + parseFloat(minutes) * 60 + seconds;
+                }
+                
+                // Helper function to get ending seconds from timestamp
+                function parseEndTimestamp(timestamp) {
+                    const timeStr = timestamp.split('-->')[1].trim();
+                    const [hours, minutes, rest] = timeStr.split(':');
+                    const seconds = parseFloat(rest);
+                    return parseFloat(hours) * 3600 + parseFloat(minutes) * 60 + seconds;
+                }
+                
+                // Group subtitles into ~20-second segments
+                if (subtitles.length > 0) {
+                    const SEGMENT_DURATION = 20; // seconds
+                    let segmentStart = parseTimestamp(subtitles[0].timestamp);
+                    let segmentEnd = segmentStart + SEGMENT_DURATION;
+                    let segmentStartTimestamp = subtitles[0].timestamp;
+                    let segmentTexts = [];
+                    let lastEndTimestamp = '';
+                    
+                    subtitles.forEach((subtitle, index) => {
+                        const startTime = parseTimestamp(subtitle.timestamp);
+                        const endTime = parseEndTimestamp(subtitle.timestamp);
+                        
+                        // If this subtitle is within current segment or first of next segment
+                        if (startTime < segmentEnd || segmentTexts.length === 0) {
+                            segmentTexts.push(subtitle.text);
+                            lastEndTimestamp = subtitle.timestamp.split('-->')[1].trim();
+                        } else {
+                            // Create a segment from collected texts
+                            segments.push({
+                                startTimestamp: segmentStartTimestamp.split('-->')[0].trim(),
+                                endTimestamp: lastEndTimestamp,
+                                text: segmentTexts.join(' ')
+                            });
+                            
+                            // Start a new segment
+                            segmentStart = startTime;
+                            segmentEnd = segmentStart + SEGMENT_DURATION;
+                            segmentStartTimestamp = subtitle.timestamp;
+                            segmentTexts = [subtitle.text];
+                            lastEndTimestamp = subtitle.timestamp.split('-->')[1].trim();
+                        }
+                        
+                        // Process the last segment if we're at the end
+                        if (index === subtitles.length - 1 && segmentTexts.length > 0) {
+                            segments.push({
+                                startTimestamp: segmentStartTimestamp.split('-->')[0].trim(),
+                                endTimestamp: lastEndTimestamp,
+                                text: segmentTexts.join(' ')
+                            });
+                        }
+                    });
+                }
+                
+                // Format segments into output text
+                return segments.map(segment => 
+                    `[${segment.startTimestamp} --> ${segment.endTimestamp}] ${segment.text}`
+                ).join('\n');
             }
 
             /**

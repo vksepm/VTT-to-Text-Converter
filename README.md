@@ -1,10 +1,11 @@
 # VTT to Text Converter
 
-A browser-based tool that converts VTT (WebVTT) subtitle files to plain text format. Built with vanilla JavaScript and styled using Tailwind CSS.
+A browser-based tool that converts VTT (WebVTT) subtitle files to plain text format with smart consolidation of segments. Built with vanilla JavaScript and styled using Tailwind CSS.
 
 ## Features
 
 - 🚀 Live Conversion: Real-time VTT to text conversion as you type or paste
+- ⌛ Smart Consolidation: Automatically groups subtitles into ~20-second segments
 - ⚡ Accurate Parsing: Correctly handles VTT timestamps and multi-line subtitles
 - 📋 Easy Export: Copy to clipboard or download as text file
 - 🎨 Modern Interface: Clean, responsive design with intuitive controls
@@ -31,13 +32,16 @@ Second subtitle line
 
 ### Output Format
 ```
-[00:00:00.000 --> 00:00:05.000] First subtitle line
-[00:00:05.000 --> 00:00:10.000] Second subtitle line
+[00:00:00.000 --> 00:00:10.000] First subtitle line Second subtitle line
+[00:00:10.000 --> 00:00:20.000] Next group of subtitle lines consolidated together
 ```
+
+The converter automatically groups subtitles into approximately 20-second segments, making the transcript more readable.
 
 ## Technical Details
 
 - Pure JavaScript implementation with no backend dependencies
+- Intelligent subtitle consolidation algorithm for better readability
 - Uses the Lucide icon library for UI elements
 - Tailwind CSS for styling
 - Regular expressions for accurate timestamp parsing
